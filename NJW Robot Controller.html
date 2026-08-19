@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>NJW Robot Controller</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Sarabun:wght@300;400;600&display=swap');
+  :root {
+    --navy:#0a0e1a; --deep:#0d1530; --panel:#111c3a; --border:#1e3a6e;
+    --gold:#f5c518; --blue:#1e90ff; --cyan:#00c8ff;
+    --danger:#ff4444; --success:#00e676; --text:#e8f4ff; --sub:#7aa8cc;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Sarabun',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;overflow-x:hidden;user-select:none;}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(30,144,255,.07) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(0,200,255,.05) 0%,transparent 50%);pointer-events:none;z-index:0;}
+  body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,144,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(30,144,255,.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  .wrap{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:16px 16px 40px;}
+
+  /* Header */
+  .header{text-align:center;padding:20px 0 14px;}
+  .logo-ring{width:70px;height:70px;margin:0 auto 10px;border-radius:50%;border:3px solid var(--gold);background:var(--panel);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-weight:900;font-size:21px;color:var(--gold);box-shadow:0 0 22px rgba(245,197,24,.35);animation:pr 3s ease-in-out infinite;}
+  @keyframes pr{0%,100%{box-shadow:0 0 22px rgba(245,197,24,.35);}50%{box-shadow:0 0 38px rgba(245,197,24,.55);}}
+  .title{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:700;letter-spacing:3px;color:var(--cyan);text-shadow:0 0 12px rgba(0,200,255,.5);}
+  .subtitle{font-size:11px;color:var(--sub);letter-spacing:1px;margin-top:3px;}
+
+  /* Status */
+  .status-bar{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin:12px 0;display:flex;align-items:center;gap:10px;}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--danger);box-shadow:0 0 8px var(--danger);flex-shrink:0;transition:all .4s;}
+  .dot.on{background:var(--success);box-shadow:0 0 8px var(--success);animation:bk 2s ease-in-out infinite;}
+  @keyframes bk{0%,100%{opacity:1;}50%{opacity:.4;}}
+  .stxt{flex:1;font-size:13px;color:var(--sub);}
+  .stxt strong{color:var(--text);display:block;font-size:14px;}
+
+  /* Buttons base */
+  .btn{border:none;border-radius:10px;cursor:pointer;font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:1px;transition:all .12s;display:flex;align-items:center;justify-content:center;gap:7px;-webkit-appearance:none;}
+  .btn:active{transform:scale(0.93);}
+
+  /* Connect */
+  .btn-con{width:100%;padding:14px;font-size:12px;background:linear-gradient(135deg,var(--blue),#0060cc);color:#fff;box-shadow:0 4px 20px rgba(30,144,255,.35);border:1px solid rgba(30,144,255,.5);}
+  .btn-con.on{background:linear-gradient(135deg,#1a6630,#0d4422);box-shadow:0 4px 20px rgba(0,230,118,.25);border-color:rgba(0,230,118,.4);}
+
+  /* Section label */
+  .slabel{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;color:var(--sub);text-transform:uppercase;margin:16px 0 9px;display:flex;align-items:center;gap:10px;}
+  .slabel::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--border),transparent);}
+
+  /* D-Pad */
+  .dpad{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:7px;}
+  .drow{display:flex;gap:7px;align-items:center;}
+  .db{width:80px;height:80px;border-radius:12px;background:var(--deep);border:1.5px solid var(--border);color:var(--cyan);font-size:26px;}
+  .db:active,.db.pr{background:rgba(0,200,255,.15);border-color:var(--cyan);box-shadow:0 0 18px rgba(0,200,255,.45);}
+  .dc{width:80px;height:80px;border-radius:50%;background:var(--deep);border:1.5px solid var(--border);color:var(--sub);font-size:10px;font-family:'Orbitron',sans-serif;letter-spacing:1px;}
+  .dc:active,.dc.pr{background:rgba(255,68,68,.15);border-color:var(--danger);box-shadow:0 0 16px rgba(255,68,68,.4);color:var(--danger);}
+  .gap80{width:80px;height:80px;}
+
+  /* Speed row */
+  .speed-row{display:flex;gap:8px;margin-top:2px;}
+  .sbtn{flex:1;padding:14px 6px;border-radius:10px;background:var(--deep);border:1.5px solid var(--border);color:var(--sub);font-size:10px;font-family:'Orbitron',sans-serif;letter-spacing:.5px;cursor:pointer;transition:all .15s;text-align:center;line-height:1.4;}
+  .sbtn:active{transform:scale(.93);}
+  .sbtn.sel{border-color:var(--gold);color:var(--gold);background:rgba(245,197,24,.08);box-shadow:0 0 12px rgba(245,197,24,.25);}
+
+  /* Log */
+  .log-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;}
+  .lh{font-family:'Orbitron',sans-serif;font-size:10px;color:var(--sub);letter-spacing:1.5px;margin-bottom:8px;}
+  .lb{min-height:40px;display:flex;align-items:center;gap:8px;}
+  .lc{background:rgba(0,200,255,.1);border:1px solid rgba(0,200,255,.25);border-radius:6px;padding:4px 12px;font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:var(--cyan);}
+  .ld{color:var(--sub);font-size:13px;}
+
+  /* Servo */
+  .servo-row{display:flex;gap:8px;}
+  .sv-card{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;}
+  .sv-title{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:1px;color:var(--sub);margin-bottom:8px;}
+  .sv-val{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:700;color:var(--gold);margin-bottom:8px;}
+  input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--border);outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px rgba(245,197,24,.5);}
+
+  /* iOS notice */
+  .ios-note{background:rgba(245,197,24,.07);border:1px solid rgba(245,197,24,.25);border-radius:10px;padding:12px 14px;font-size:12px;color:#c9a800;line-height:1.7;}
+  .ios-note strong{color:var(--gold);}
+
+  .footer{text-align:center;margin-top:22px;font-size:10px;color:var(--border);font-family:'Orbitron',sans-serif;letter-spacing:1px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="logo-ring">NJW</div>
+    <div class="title">ROBOT CONTROLLER</div>
+    <div class="subtitle">NJW Football DEW · ESP32 Bluetooth Classic</div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="dot" id="dot"></div>
+    <div class="stxt">
+      <strong id="st-title">ยังไม่เชื่อมต่อ</strong>
+      <span id="st-sub">กด Connect เพื่อเชื่อมต่อ Bluetooth</span>
+    </div>
+  </div>
+
+  <button class="btn btn-con" id="btn-con" onclick="toggleConnect()">
+    📡 &nbsp;CONNECT · NJW Football DEW
+  </button>
+
+  <!-- iOS Notice -->
+  <div class="ios-note" style="margin-top:10px;">
+    <strong>📱 iPhone/iPad:</strong> Safari ไม่รองรับ Bluetooth Classic (HC-05 style)<br>
+    ใช้แอป <strong>Bluefy</strong> หรือ <strong>Serial Bluetooth Terminal</strong> แทน<br>
+    หรือใช้ Android + Chrome สำหรับ Web Bluetooth
+  </div>
+
+  <!-- D-PAD -->
+  <div class="slabel">การควบคุม</div>
+  <div class="dpad">
+    <div class="drow">
+      <div class="gap80"></div>
+      <button class="btn db" id="db-T"
+        ontouchstart="hold('T')" ontouchend="release()"
+        onmousedown="hold('T')" onmouseup="release()">▲</button>
+      <div class="gap80"></div>
+    </div>
+    <div class="drow">
+      <button class="btn db" id="db-L"
+        ontouchstart="hold('L')" ontouchend="release()"
+        onmousedown="hold('L')" onmouseup="release()">◀</button>
+      <button class="btn dc" id="db-S"
+        ontouchstart="send('S')" ontouchend="noop()"
+        onmousedown="send('S')">STOP</button>
+      <button class="btn db" id="db-R"
+        ontouchstart="hold('R')" ontouchend="release()"
+        onmousedown="hold('R')" onmouseup="release()">▶</button>
+    </div>
+    <div class="drow">
+      <div class="gap80"></div>
+      <button class="btn db" id="db-B"
+        ontouchstart="hold('B')" ontouchend="release()"
+        onmousedown="hold('B')" onmouseup="release()">▼</button>
+      <div class="gap80"></div>
+    </div>
+  </div>
+
+  <!-- Speed Select -->
+  <div class="slabel">ความเร็วเดินหน้า</div>
+  <div class="speed-row">
+    <button class="sbtn" id="sp-T" onclick="setSpeed('T')">
+      🐢<br>ช้า<br><span style="color:var(--cyan);font-size:9px;">90/90</span>
+    </button>
+    <button class="sbtn sel" id="sp-Y" onclick="setSpeed('Y')">
+      ⚡<br>กลาง<br><span style="color:var(--cyan);font-size:9px;">110/110</span>
+    </button>
+    <button class="sbtn" id="sp-X" onclick="setSpeed('X')">
+      🚀<br>เร็ว<br><span style="color:var(--cyan);font-size:9px;">120/120</span>
+    </button>
+    <button class="sbtn" id="sp-MAX" onclick="setSpeed('MAX')">
+      💥<br>MAX<br><span style="color:var(--cyan);font-size:9px;">250/250</span>
+    </button>
+  </div>
+
+  <!-- Backward Speed -->
+  <div class="slabel">ถอยหลัง</div>
+  <div class="speed-row">
+    <button class="sbtn sel" id="bk-B" onclick="setBackward('B')" style="flex:1">
+      🐢 ถอยช้า<br><span style="color:var(--cyan);font-size:9px;">cmd: B (60/60)</span>
+    </button>
+    <button class="sbtn" id="bk-W" onclick="setBackward('W')" style="flex:1">
+      🚀 ถอยเร็ว<br><span style="color:var(--cyan);font-size:9px;">cmd: W (110/105)</span>
+    </button>
+  </div>
+
+  <!-- Log -->
+  <div class="slabel">คำสั่งล่าสุด</div>
+  <div class="log-card">
+    <div class="lh">LAST COMMAND SENT</div>
+    <div class="lb">
+      <span class="lc" id="lc">—</span>
+      <span class="ld" id="ld">รอคำสั่ง...</span>
+    </div>
+  </div>
+
+  <!-- Servo Control -->
+  <div class="slabel">Servo (ss1·ss2·ss3)</div>
+  <div class="servo-row">
+    <div class="sv-card">
+      <div class="sv-title">SV1 · Pin 25</div>
+      <div class="sv-val" id="sv1v">90°</div>
+      <input type="range" min="0" max="180" value="90" oninput="svChange(1,this.value)">
+    </div>
+    <div class="sv-card">
+      <div class="sv-title">SV2 · Pin 26</div>
+      <div class="sv-val" id="sv2v">90°</div>
+      <input type="range" min="0" max="180" value="90" oninput="svChange(2,this.value)">
+    </div>
+    <div class="sv-card">
+      <div class="sv-title">SV3 · Pin 27</div>
+      <div class="sv-val" id="sv3v">90°</div>
+      <input type="range" min="0" max="180" value="90" oninput="svChange(3,this.value)">
+    </div>
+  </div>
+
+  <div class="footer">NJW ROBOT CODING TEAM · ESP32 · BT CLASSIC</div>
+</div>
+
+<script>
+// ── State ──
+let btDevice=null, btChar=null, isConn=false;
+let holdTmr=null;
+let fwdCmd='Y';   // default speed
+let bkCmd='B';    // default backward
+
+const DESC = {
+  T:'เดินหน้าช้า (90/90)', Y:'เดินหน้ากลาง (110/110)',
+  X:'เดินหน้าเร็ว (120/120)', MAX:'เดินหน้า MAX (250/250)',
+  L:'เลี้ยวซ้าย (-100/100)', R:'เลี้ยวขวา (100/-100)',
+  B:'ถอยหลังช้า (-60/-60)', W:'ถอยหลังเร็ว (-110/-105)',
+  S:'หยุด (0/0)',
+};
+
+// ── UI ──
+function setStatus(conn, title, sub){
+  isConn=conn;
+  document.getElementById('dot').className='dot'+(conn?' on':'');
+  document.getElementById('st-title').textContent=title;
+  document.getElementById('st-sub').textContent=sub;
+  const b=document.getElementById('btn-con');
+  b.className='btn btn-con'+(conn?' on':'');
+  b.innerHTML=conn?'✅ &nbsp;เชื่อมต่อแล้ว · แตะเพื่อตัด':'📡 &nbsp;CONNECT · NJW Football DEW';
+}
+
+function logIt(cmd){
+  document.getElementById('lc').textContent=cmd;
+  document.getElementById('ld').textContent=DESC[cmd]||cmd;
+}
+
+// ── Speed selector ──
+function setSpeed(sp){
+  fwdCmd=sp;
+  ['T','Y','X','MAX'].forEach(s=>document.getElementById('sp-'+s).classList.toggle('sel',s===sp));
+}
+
+function setBackward(sp){
+  bkCmd=sp;
+  ['B','W'].forEach(s=>document.getElementById('bk-'+s).classList.toggle('sel',s===sp));
+}
+
+// ── Servo (ส่ง string "V1:90\n" ไป Arduino — ต้องเพิ่มโค้ดรับฝั่ง ESP32 ด้วย) ──
+function svChange(n,val){
+  document.getElementById('sv'+n+'v').textContent=val+'°';
+  send('V'+n+':'+val);
+}
+
+// ── BLE (ESP32 Bluetooth Classic ผ่าน BLE service ffe0) ──
+const SVC='0000ffe0-0000-1000-8000-00805f9b34fb';
+const CHR='0000ffe1-0000-1000-8000-00805f9b34fb';
+
+async function toggleConnect(){
+  if(isConn){disconnect();return;}
+  if(!navigator.bluetooth){
+    alert('⚠️ เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth\n\nใช้ Chrome บน Android\nหรือแอป Bluefy บน iPhone');
+    return;
+  }
+  try{
+    setStatus(false,'กำลังค้นหา...','โปรดเลือก "NJW Football DEW"');
+    btDevice=await navigator.bluetooth.requestDevice({
+      filters:[{name:'NJW Football DEW'},{namePrefix:'NJW'},{services:[SVC]}],
+      optionalServices:[SVC]
+    });
+    btDevice.addEventListener('gattserverdisconnected',onDC);
+    const srv=await btDevice.gatt.connect();
+    const svc=await srv.getPrimaryService(SVC);
+    btChar=await svc.getCharacteristic(CHR);
+    setStatus(true,'🤖 '+btDevice.name,'เชื่อมต่อสำเร็จ · พร้อมควบคุม!');
+  }catch(e){
+    setStatus(false,'ยังไม่เชื่อมต่อ','ยกเลิก หรือเกิดข้อผิดพลาด: '+e.message);
+  }
+}
+
+function disconnect(){
+  if(btDevice&&btDevice.gatt.connected)btDevice.gatt.disconnect();
+}
+
+function onDC(){
+  setStatus(false,'การเชื่อมต่อถูกตัด','กด Connect อีกครั้ง');
+  btChar=null;
+}
+
+async function send(cmd){
+  logIt(cmd);
+  if(!btChar)return;
+  try{await btChar.writeValue(new TextEncoder().encode(cmd));}
+  catch(e){console.warn(e);}
+}
+
+function noop(){}
+
+// ── Hold button ──
+function hold(dir){
+  // แปลง direction เป็น cmd จริง
+  let cmd=dir;
+  if(dir==='T')cmd=fwdCmd;   // เดินหน้า → ใช้ speed ที่เลือก
+  if(dir==='B')cmd=bkCmd;    // ถอยหลัง → ใช้ backward ที่เลือก
+  // L, R ส่งตรง
+
+  send(cmd);
+  document.getElementById('db-'+dir)?.classList.add('pr');
+  holdTmr=setInterval(()=>send(cmd),80);
+}
+
+function release(){
+  clearInterval(holdTmr); holdTmr=null;
+  ['T','B','L','R'].forEach(d=>document.getElementById('db-'+d)?.classList.remove('pr'));
+  send('S');
+}
+
+// ── Keyboard ──
+const KM={ArrowUp:'T',ArrowDown:'B',ArrowLeft:'L',ArrowRight:'R',' ':'S'};
+document.addEventListener('keydown',e=>{
+  const d=KM[e.key];
+  if(d&&!holdTmr){e.preventDefault();if(d==='S')send('S');else hold(d);}
+});
+document.addEventListener('keyup',e=>{
+  if(KM[e.key]&&KM[e.key]!=='S'){e.preventDefault();release();}
+});
+</script>
+</body>
+</html>
